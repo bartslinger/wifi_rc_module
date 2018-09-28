@@ -28,7 +28,7 @@
 #include "cppm.h"
 #include "ota.h"
 
-#include "mavlink/include/common/mavlink.h"
+#include <mavlink.h>
 
 /* Configuration */
 const char* ardrone_ip = "192.168.1.1";
@@ -456,8 +456,13 @@ bool find_ardrone2() {
 
 void send_mavlink_rc_msg() {
   mavlink_message_t msg;
+
+  int16_t x = (cppm.values[ELEVATOR] - 1500) * 2;
+  int16_t y = (cppm.values[AILERON] - 1500) * 2;
+  int16_t z = (cppm.values[THROTTLE] - 1500) * 2;
+  int16_t r = (cppm.values[RUDDER] - 1500) * 2;
   
-  mavlink_msg_manual_control_pack(1, 60, &msg, 1, 0, 0, 0, 0, 0);
+  mavlink_msg_manual_control_pack(1, 60, &msg, 1, x, y, z, r, 0);
   uint16_t len = mavlink_msg_to_send_buffer(mavlink_buffer, &msg);
 
   mavlink_udp.beginPacket(bebop_ip, mavlink_udp_tx_port);
