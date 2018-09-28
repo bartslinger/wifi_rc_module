@@ -28,6 +28,8 @@
 #include "cppm.h"
 #include "ota.h"
 
+#include "mavlink/include/common/mavlink.h"
+
 /* Configuration */
 const char* ardrone_ip = "192.168.1.1";
 const char* bebop_ip = "192.168.42.1";       /* IP Address of the ARDrone2         */
@@ -44,14 +46,21 @@ IPAddress hotspot_broadcast_ip(192,168,255,255);
 
 WiFiClient tn;
 WiFiUDP pprz_udp;
+WiFiUDP mavlink_udp;
 uint16_t pprz_udp_rx_port = 4242;
 uint16_t pprz_udp_tx_port = 4243;
+uint16_t mavlink_udp_rx_port = 14551;
+uint16_t mavlink_udp_tx_port = 14550;
+uint8_t mavlink_system_id = 1;
+uint8_t mavlink_component_id = 60;
 uint8_t ac_id = 0;
 char msgBuffer[256]; //buffer to hold incoming packet
 uint8_t tn_readback_i = 0;
 const char psaux_cmd[] = "ps | grep ap.elf\n";
 const char ardrone2_start_cmd[] = "/data/video/paparazzi/ap.elf > /dev/null 2>&1 &\n";
 const char bebop_start_cmd[]    = "/data/ftp/internal_000/paparazzi/ap.elf > /dev/null 2>&1 &\n";
+
+uint8_t mavlink_buffer[2041];
 
 enum drone_types {
   ARDRONE2,
@@ -215,6 +224,10 @@ void loop() {
         /* Continue to pre-flight */
         txb_state = TXB_PREFLIGHT;
         Serial.println("Preflight");
+        // OVERWRITE, proceed to mavlink streaming
+        mavlink_udp.begin(mavlink_udp_rx_port);
+        cppm_continue();
+        txb_state = TXB_STREAMING;
       }
       break;
 
@@ -349,7 +362,7 @@ void loop() {
     }
 
     case TXB_STREAMING:
-      send_pprz_rc_msg();
+      send_mavlink_rc_msg();
       break;
 
     default:
@@ -439,6 +452,17 @@ bool find_ardrone2() {
   }
   
   return false;
+}
+
+void send_mavlink_rc_msg() {
+  mavlink_message_t msg;
+  
+  mavlink_msg_manual_control_pack(1, 60, &msg, 1, 0, 0, 0, 0, 0);
+  uint16_t len = mavlink_msg_to_send_buffer(mavlink_buffer, &msg);
+
+  mavlink_udp.beginPacket(bebop_ip, mavlink_udp_tx_port);
+  mavlink_udp.write(mavlink_buffer, len);
+  mavlink_udp.endPacket();
 }
 
 /*
