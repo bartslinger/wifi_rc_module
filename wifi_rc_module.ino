@@ -49,8 +49,8 @@ WiFiUDP pprz_udp;
 WiFiUDP mavlink_udp;
 uint16_t pprz_udp_rx_port = 4242;
 uint16_t pprz_udp_tx_port = 4243;
-uint16_t mavlink_udp_rx_port = 14551;
-uint16_t mavlink_udp_tx_port = 14550;
+uint16_t mavlink_udp_rx_port = 14560;
+uint16_t mavlink_udp_tx_port = 14557;
 uint8_t mavlink_system_id = 1;
 uint8_t mavlink_component_id = 60;
 uint8_t ac_id = 0;
@@ -225,7 +225,8 @@ void loop() {
         txb_state = TXB_PREFLIGHT;
         Serial.println("Preflight");
         // OVERWRITE, proceed to mavlink streaming
-        mavlink_udp.begin(mavlink_udp_rx_port);
+        mavlink_udp.beginMulticast(myIP, bebop_broadcast_ip, mavlink_udp_rx_port);
+        digitalWrite(LED_PIN, LED_ON);
         cppm_continue();
         txb_state = TXB_STREAMING;
       }
@@ -459,17 +460,16 @@ void send_mavlink_rc_msg() {
 
   int16_t x = (cppm.values[ELEVATOR] - 1500) * 2;
   int16_t y = (cppm.values[AILERON] - 1500) * 2;
-  int16_t z = (cppm.values[THROTTLE] - 1500) * 2;
+  int16_t z = (cppm.values[THROTTLE] - 800) * 0.9;
   int16_t r = (cppm.values[RUDDER] - 1500) * 2;
   
   mavlink_msg_manual_control_pack(1, 60, &msg, 1, x, y, z, r, 0);
   uint16_t len = mavlink_msg_to_send_buffer(mavlink_buffer, &msg);
 
-  mavlink_udp.beginPacket(bebop_ip, mavlink_udp_tx_port);
+  mavlink_udp.beginPacketMulticast(bebop_broadcast_ip, mavlink_udp_tx_port, myIP);
   mavlink_udp.write(mavlink_buffer, len);
   mavlink_udp.endPacket();
 }
-
 /*
  * <message name="RC_4CH" id="52" link="broadcasted">
       <field name="ac_id"       type="uint8"/>
@@ -540,4 +540,3 @@ void send_pprz_rc_msg() {
   pprz_udp.endPacket();
   //Serial.println("sent");
 }
-
