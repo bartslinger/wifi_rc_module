@@ -462,8 +462,15 @@ void send_mavlink_rc_msg() {
   int16_t y = (cppm.values[AILERON] - 1500) * 2;
   int16_t z = (cppm.values[THROTTLE] - 800) * 0.9;
   int16_t r = (cppm.values[RUDDER] - 1500) * 2;
-  
-  mavlink_msg_manual_control_pack(1, 60, &msg, 1, x, y, z, r, 0);
+  uint16_t buttons = 0;
+
+  if (cppm.values[AUX1] > CPPM_MIN_COMMAND) buttons = 1;
+  if (cppm.values[AUX1] > CPPM_MAX_COMMAND) buttons = 2;
+  if (cppm.values[AUX2] > CPPM_MAX_COMMAND) buttons |= (1 << 2);
+  if (cppm.values[AUX3] > CPPM_MAX_COMMAND) buttons |= (1 << 3);
+  if (cppm.values[AUX4] > CPPM_MAX_COMMAND) buttons |= (1 << 4);
+
+  mavlink_msg_manual_control_pack(1, 60, &msg, 1, x, y, z, r, buttons);
   uint16_t len = mavlink_msg_to_send_buffer(mavlink_buffer, &msg);
 
   mavlink_udp.beginPacketMulticast(bebop_broadcast_ip, mavlink_udp_tx_port, myIP);
