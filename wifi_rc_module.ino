@@ -17,6 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with TXBoxy-PT.  If not, see <http://www.gnu.org/licenses/>.
  *
+ * Generic
+ * Flash Mode: QIO
+ * Flash size: 1M 64K spiffs
+ * v2 lower memory
+ * 26MHz
+ * 40MHz
+ * 80MHz
+ * Erase all flash contents
+ * 
  */
  
 #include <ESP8266WiFi.h>
@@ -397,14 +406,14 @@ bool find_ardrone2() {
   for (int i = 0; i < n; i++) {
     /* Check if the SSID starts with "ardrone2_" */
     char str[] ="ardrone2_";
-    char tmp[20];
-    WiFi.SSID(i).toCharArray(tmp, 20);
+    char tmp[30];
+    WiFi.SSID(i).toCharArray(tmp, 30);
     char *pos = strstr (tmp, str);
     
     char bebop[] = "Bebop";
     char *pos2 = strstr (tmp, bebop);
 
-    char esp[] = "MyAndroidPhone";
+    char esp[] = "MaptureBox";
     char *pos3 = strstr (tmp, esp);
     
     Serial.print(i + 1);
@@ -442,7 +451,7 @@ bool find_ardrone2() {
         drone_type = HOTSPOT;
         ardrone_detected = true;
         best_rssi = WiFi.RSSI(i);
-        WiFi.SSID(i).toCharArray(ssid, 20);
+        WiFi.SSID(i).toCharArray(ssid, 30);
       }
     }
     delay(10);    
